@@ -26,27 +26,31 @@ function skipped_test_names () {
 }
 
 FOCUS="${FOCUS:-}"
-API_SERVER="${API_SERVER:-}"
-if [ -z "$API_SERVER" ]; then
-    echo "Must provide API_SERVER env var" 1>&2
-    exit 1
-fi
-
 export KUBERNETES_PROVIDER=skeleton
 export KUBERNETES_CONFORMANCE_TEST=y
 
 # Configure kube config
-cluster/kubectl.sh config set-cluster local --server="$API_SERVER" --insecure-skip-tls-verify=true
-cluster/kubectl.sh config set-context local --cluster=local --user=local
-cluster/kubectl.sh config use-context local
+if [ -f /kubeconfig ]; then
+    export KUBECONFIG=/kubeconfig
+else
+    API_SERVER="${API_SERVER:-}"
+    if [ -z "$API_SERVER" ]; then
+        echo "Must provide API_SERVER env var" 1>&2
+        exit 1
+    fi
+
+    cluster/kubectl.sh config set-cluster local --server="$API_SERVER" --insecure-skip-tls-verify=true
+    cluster/kubectl.sh config set-context local --cluster=local --user=local
+    cluster/kubectl.sh config use-context local
+fi
 
 if [ -z "$FOCUS" ]; then
     # non-serial tests can be run in parallel mode
-    GINKGO_PARALLEL=y go run hack/e2e.go --v --test -check_version_skew=false \
-      --test_args="--ginkgo.focus=\[Conformance\] --ginkgo.skip=\[Serial\]|\[Flaky\]|\[Feature:.+\]|$(skipped_test_names)"
+    GINKGO_PARALLEL=y go run hack/e2e.go -- -v -test -check-version-skew=false \
+      -test_args="--ginkgo.focus=\[Conformance\] --ginkgo.skip=\[Serial\]|\[Flaky\]|\[Feature:.+\]|$(skipped_test_names)"
 
     # serial tests must be run without GINKGO_PARALLEL
-    go run hack/e2e.go --v --test -check_version_skew=false --test_args="--ginkgo.focus=\[Serial\].*\[Conformance\] --ginkgo.skip=$(skipped_test_names)"
+    go run hack/e2e.go -- -v -test -check-version-skew=false -test_args="--ginkgo.focus=\[Serial\].*\[Conformance\] --ginkgo.skip=$(skipped_test_names)"
 else
-    go run hack/e2e.go --v --test -check_version_skew=false --test_args="--ginkgo.focus=$(escape_test_name "$FOCUS")"
+    go run hack/e2e.go -- -v -test -check-version-skew=false -test_args="--ginkgo.focus=$(escape_test_name "$FOCUS")"
 fi
