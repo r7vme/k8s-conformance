@@ -46,11 +46,11 @@ fi
 
 if [ -z "$FOCUS" ]; then
     # non-serial tests can be run in parallel mode
-    GINKGO_PARALLEL=y go run hack/e2e.go -- -v -test -check-version-skew=false \
+    GINKGO_PARALLEL=y go run hack/e2e.go -- --extract=v1.5.1 -v -test -check-version-skew=false \
       -test_args="--ginkgo.focus=\[Conformance\] --ginkgo.skip=\[Serial\]|\[Flaky\]|\[Feature:.+\]|$(skipped_test_names)"
 
     # serial tests must be run without GINKGO_PARALLEL
-    go run hack/e2e.go -- -v -test -check-version-skew=false -test_args="--ginkgo.focus=\[Serial\].*\[Conformance\] --ginkgo.skip=$(skipped_test_names)"
+    go run hack/e2e.go -- --extract=v1.5.1 -v -test -check-version-skew=false -test_args="--ginkgo.focus=\[Serial\].*\[Conformance\] --ginkgo.skip=$(skipped_test_names)"
 else
-    go run hack/e2e.go -- -v -test -check-version-skew=false -test_args="--ginkgo.focus=$(escape_test_name "$FOCUS")"
+    go run hack/e2e.go -- --extract=v1.5.1 -v -test -check-version-skew=false -test_args="--ginkgo.focus=$(escape_test_name "$FOCUS")"
 fi
